@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Add Or Remove Page{% endblock %}
+{% block content %}
+<div style="position: fixed; top: 40%; right: 20%;  text-align: center; padding: 10px;">
+   <form action="/debt_or_owed" method = "post"style ="color: lightgreen;">
+      <h2>Select Debt Or Owed :</h2>
+      <input type="radio" name="optiondebt" value="debttable"style="height:20px; width:20px;"{% if selected_option == 'debttable' %}checked{% endif %}>
+      <label >Debt</label><br>
+      <input type="radio" name="optiondebt" value="owedtable"style="height:20px; width:20px;"{% if selected_option == 'owedtable' %}checked{% endif %}>
+      <label >Owed</label><br>
+      <input type="submit" value="Submit">
+   </form>
+</div> 
+{% if  formvisible %}
+   <fieldset style ="color: white;">
+      <legend>MODIFYING  {% if z %}{{z.upper()}}{% endif %}  TABLE </legend>
+         <form action ="/add" method ="post">
+            <p style="color:white; background-color:rgb(12, 12, 29);"><b>ADD:</b></p>
+            <p><input type="text" name = "personname"placeholder="personname"/>
+            <p><input type="number" name = "amount" placeholder="amount"/>    
+            <p><input type="submit" value = "submit"/></p>
+         </form>
+         
+         <form action ="/delete" method ="post">
+            <p style="color:white; background-color:rgb(12, 12, 29);"><b>REMOVE:</b></p>
+            <p><input type="text" name = "remove" placeholder="personname to remove"/>   
+            <p><input type="submit" value = "submit"/></p>
+         </form>
+
+
+         <form action ="/update" method ="post">
+            <p style="color:white; background-color:rgb(12, 12, 29);"><b>UPDATE:</b></p>
+            <p><input type="text" name = "update_personname" placeholder="personname"/>
+            <p><input type="number" name = "update_amount" placeholder="new-amount"/>     
+            <p><input type="submit" value = "submit"/></p>
+         </form>
+   </fieldset>
+   
+{% endif %}
+{% endblock %}
