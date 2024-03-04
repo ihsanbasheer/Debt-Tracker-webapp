@@ -13,5 +13,6 @@
     <h1 style = "color: red ;">Net : ${{x-y}}</h1>
 {% else %}
     <h1 style = "color: green ;">Net : ${{x-y}}</h1>
-{% endif%} 
+{% endif%}
+<img src="{{ url_for('static', filename='images/plot.png') }}"> 
 {% endblock %}

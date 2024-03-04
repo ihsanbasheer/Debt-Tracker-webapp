@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from modules import app
-from modules.database import checktable
+from modules.database import checktable,get_plot
 
 import sqlite3
 
@@ -43,6 +43,13 @@ def welcome():
         sumdebt = d.fetchone()[0]
         d.execute('SELECT COALESCE(SUM(amount), 0) FROM owedtable')
         sumowed = d.fetchone()[0]
+        
+        plot = get_plot() 
+  
+        # Save the figure in the static directory 
+        plot.savefig(os.path.join( 'modules','static', 'images', 'plot.png'))
+        print("plot saved")
+                     
         return render_template("home.html",x=sumdebt,y=sumowed)
     else:
         return redirect(url_for('login'))
