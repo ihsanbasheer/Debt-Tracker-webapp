@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from modules import app
-from modules.database import checktable,get_plot
+from modules.database import checktable,get_plot,register_user,check_user_unique,check_password
 
 import sqlite3
 
@@ -10,8 +10,7 @@ checktable()
 
 load_dotenv()
 
-USER_NAME = os.environ['USER']
-PASS_WORD = os.environ['PWD']
+
 @app.route('/', methods=["GET"])
 def redir():
     if 'username' in session:
@@ -26,13 +25,30 @@ def login():
         loginuser = request.form["LOGINU"] 
         loginpass = request.form["LOGINP"]
 
-        if loginuser == USER_NAME and loginpass == PASS_WORD:
+        if check_password(loginuser) == loginpass:
             session['username'] = loginuser
             return redirect(url_for('welcome'))
         else:
             flash("Invalid username or password", "error")
             
     return render_template('login.html')
+
+@app.route('/register', methods=["GET", "POST"])
+def register():
+
+    if request.method == "POST":
+        registeruser = request.form["REGISTERU"] 
+        registerpass = request.form["REGISTERP"]
+        registerconfirmpass = request.form["CONFIRMREGISTERP"]
+
+        if check_user_unique(registeruser) and registerpass == registerconfirmpass:
+            register_user(registeruser,registerpass)
+            flash("Registered user successfully", "success")
+            return redirect(url_for('login'))
+        else:
+            flash("Invalid username or password", "error")
+            
+    return render_template('register.html')
 
 @app.route('/home', methods=["GET", "POST"])
 def welcome():
