@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from modules import app
-from modules.database import checktable,get_plot,register_user,check_user_unique,check_password
+from modules.database import checktable,get_plot,register_user,check_user_unique,check_password,get_id
 
 import sqlite3
 
@@ -27,6 +27,7 @@ def login():
 
         if check_password(loginuser) == loginpass:
             session['username'] = loginuser
+            session['user_id'] = get_id(loginuser)
             return redirect(url_for('welcome'))
         else:
             flash("Invalid username or password", "error")
@@ -53,17 +54,18 @@ def register():
 @app.route('/home', methods=["GET", "POST"])
 def welcome():
     if 'username' in session:
-        connect = sqlite3.connect("debtowed_info.db")
+        user_id = session['user_id']
+        connect = sqlite3.connect("debttracker.db")
         d=connect.cursor()
-        d.execute('SELECT COALESCE(SUM(amount), 0) FROM debttable')
+        d.execute('SELECT COALESCE(SUM(amount), 0) FROM debttable WHERE type = "debt" AND user_id = ?',(user_id,))
         sumdebt = d.fetchone()[0]
-        d.execute('SELECT COALESCE(SUM(amount), 0) FROM owedtable')
+        d.execute('SELECT COALESCE(SUM(amount), 0) FROM debttable WHERE type = "owed" AND user_id = ?',(user_id,))
         sumowed = d.fetchone()[0]
         
-        plot = get_plot() 
+        plot = get_plot(user_id) 
   
         # Save the figure in the static directory 
-        plot.savefig(os.path.join( 'modules','static', 'images', 'plot.png'))
+        plot.savefig(os.path.join( 'modules','static', 'images', 'plot.png'),transparent=True)
         print("plot saved")
                      
         return render_template("home.html",x=sumdebt,y=sumowed)
@@ -77,36 +79,43 @@ def modify():
 @app.route('/logout')
 def logout():
     session.pop('username', None)
+    session.pop('user_id',None)
     return redirect(url_for('login'))
 
 
 @app.route('/viewdebt', methods =["POST","GET"])
-def debttable():
-    connect = sqlite3.connect("debtowed_info.db")
+def debt():
+    user_id = session['user_id']
+    connect = sqlite3.connect("debttracker.db")
     d=connect.cursor()
-    d.execute('SELECT * FROM debttable' )
+    d.execute('SELECT * FROM debttable WHERE type = "debt" AND user_id == ?',(user_id,) )
     x = d.fetchall()
     return render_template("viewdebt.html",x=x)
 
 @app.route('/viewowed', methods =["POST","GET"])
-def owedtable():
-    connect = sqlite3.connect("debtowed_info.db")
+def owed():
+    user_id = session['user_id']
+    connect = sqlite3.connect("debttracker.db")
     d=connect.cursor()
-    d.execute('SELECT * FROM owedtable' )
+    d.execute('SELECT * FROM debttable WHERE type = "owed" AND user_id == ?',(user_id,))
     y = d.fetchall()
     return render_template("viewowed.html",y=y)
 
 
 @app.route('/add', methods=['POST', 'GET'])
 def addperson():
-    connect = sqlite3.connect("debtowed_info.db")
+    
+    connect = sqlite3.connect("debttracker.db")
     d=connect.cursor()
     if request.method == 'POST':
-        table = session["table"]    
+        table = session["table"]
+        user_id = session['user_id']    
         inputperson = request.form["personname"] 
-        inputamount = request.form["amount"] 
-        query = f'INSERT INTO {table} VALUES (?, ?)'
-        d.execute(query,(inputperson,inputamount) )
+        inputamount = request.form["amount"]
+        debt_or_owed =  session["table"]
+        query = f'INSERT INTO debttable(person,amount,type,user_id) VALUES(?,?,?,?)'
+        print("Query:", inputperson, inputamount, debt_or_owed, user_id)  # Print the query string
+        d.execute(query, (inputperson, inputamount, debt_or_owed, user_id))
         connect.commit()
 
         connect.close()
@@ -115,35 +124,37 @@ def addperson():
 
 @app.route('/delete', methods=["POST", "GET"])
 def deleter():
-    connect = sqlite3.connect("debtowed_info.db")
+    user_id = session['user_id']
+    connect = sqlite3.connect("debttracker.db")
     d=connect.cursor()
-    debt_or_owed =  request.form.get("optiondebt")
+    debt_or_owed =  session["table"]
     table = session["table"]
     remove= request.form["remove"]
-    query = f'DELETE FROM {table} WHERE person==?'
-    d.execute(query,(remove,))
+    query = f'DELETE FROM debttable WHERE person==? AND type ==? AND user_id == ?'
+    d.execute(query,(remove,debt_or_owed,user_id))
     connect.commit()
     return redirect(url_for(table))
 
 @app.route('/update', methods=["POST", "GET"])
 def updater():
-    connect = sqlite3.connect("debtowed_info.db")
+    user_id = session['user_id']
+    connect = sqlite3.connect("debttracker.db")
     d=connect.cursor()
     person_update= request.form["update_personname"]
     amount_update = request.form["update_amount"]
-    debt_or_owed =  request.form.get("optiondebt")
+    debt_or_owed =  session["table"]
     table = session["table"]
-    query = f"UPDATE {table} SET amount =? WHERE person ==?"    
-    d.execute(query,(amount_update,person_update) )
+    query = f"UPDATE debttable SET amount =? WHERE person ==? AND type ==? AND user_id == ?"    
+    d.execute(query,(amount_update,person_update,debt_or_owed,user_id) )
     connect.commit()
     return redirect(url_for(table))
 
 
 @app.route('/debt_or_owed', methods =["POST","GET"])
 def formactivity():
-    debt_or_owed =  request.form.get("optiondebt")
+    debt_or_owed = request.form['optiondebt']
     if debt_or_owed:
         session["formvisible"] = True
         session["table"] = debt_or_owed
               
-    return render_template("add_or_remove.html",z=request.form.get("optiondebt"),formvisible=session["formvisible"])
+    return render_template("add_or_remove.html",z=debt_or_owed,formvisible=session["formvisible"])

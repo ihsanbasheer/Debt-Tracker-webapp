@@ -2,11 +2,11 @@
 {% block title %}Add Or Remove Page{% endblock %}
 {% block content %}
 <div style="position: fixed; top: 40%; right: 20%;  text-align: center; padding: 10px;">
-   <form action="/debt_or_owed" method = "post"style ="color: lightgreen;">
+   <form action="/debt_or_owed" style ="color: lightgreen;" method = "post" >
       <h2>Select Debt Or Owed :</h2>
-      <input type="radio" name="optiondebt" value="debttable"style="height:20px; width:20px;"{% if selected_option == 'debttable' %}checked{% endif %}>
+      <input type="radio" name="optiondebt" value="debt"style="height:20px; width:20px;"{% if selected_option == 'debt' %}checked{% endif %}>
       <label >Debt</label><br>
-      <input type="radio" name="optiondebt" value="owedtable"style="height:20px; width:20px;"{% if selected_option == 'owedtable' %}checked{% endif %}>
+      <input type="radio" name="optiondebt" value="owed"style="height:20px; width:20px;"{% if selected_option == 'owed' %}checked{% endif %}>
       <label >Owed</label><br>
       <input type="submit" value="Submit">
    </form>

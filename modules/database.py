@@ -1,38 +1,40 @@
 import sqlite3
 import numpy as np
+
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 def get_database_connection():
-    return sqlite3.connect("debtowed_info.db")
+    return sqlite3.connect("debttracker.db")
 
 
 CREATE_USERS_TABLE = """
 CREATE TABLE IF NOT EXISTS users (
-    username TEXT,
-    password TEXT
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL,
+    password TEXT NOT NULL
 )
 """
 
 CREATE_DEBT_TABLE = """
 CREATE TABLE IF NOT EXISTS debttable (
+    
     person TEXT,
-    amount INTEGER
+    amount INTEGER,
+    type TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 )
 """
 
-CREATE_OWED_TABLE = """
-CREATE TABLE IF NOT EXISTS owedtable (
-    person TEXT,
-    amount INTEGER
-)
-"""
+
 
 def checktable():
     with get_database_connection() as connect:
         d = connect.cursor()
-        tables = ["debttable","owedtable"]
+        tables = ["debttable","users"]
+        # SELECT {tables[0]} FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'
         query = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{tables[0]}';"
         query1 = f"SELECT name FROM sqlite_master WHERE type='table' AND name='{tables[1]}';"
         d.execute(query)
@@ -44,24 +46,28 @@ def checktable():
             d.execute(CREATE_DEBT_TABLE)
             
         if not result1:
-            d.execute(CREATE_OWED_TABLE)    
+            d.execute(CREATE_USERS_TABLE)    
             
-def get_plot(): 
+def get_plot(i): 
     with get_database_connection() as connect:
     
         d=connect.cursor()
-        d.execute('SELECT * FROM debttable' )
+        query =f'SELECT * FROM debttable WHERE type = "debt" AND user_id = ?'
+        d.execute(query,(str(i),) )
         x = d.fetchall()
-        d.execute('SELECT * FROM owedtable' )
+        query1 =f'SELECT * FROM debttable WHERE type = "owed" AND user_id = ?'
+        d.execute(query1,(str(i),) )
         o = d.fetchall()
+        print(o)
         names = [n[0] for n in x]
         amount = [n[1] for n in x]
         onames = [n[0] for n in o]
         oamount = [n[1] for n in o]
 
-        plt.figure(figsize=(9, 5))
+
+        plt.figure(figsize=(10, 5))
         plt.subplot(1, 2, 1)  # 2 rows, 1 column, plot 1 (top plot)
-        plt.barh(names, amount, color='skyblue')
+        plt.bar(names, amount, color='skyblue')
         plt.xlabel('Amount',color="white")
         plt.ylabel('Names',color="white")
         plt.title('Debt Distribution',color="white")
@@ -70,21 +76,20 @@ def get_plot():
 
        
         plt.subplot(1, 2, 2)  # 2 rows, 1 column, plot 1 (top plot)
-        plt.barh(onames, oamount, color='skyblue')
+        plt.bar(onames, oamount, color='skyblue')
         plt.xlabel('Amount',color="white")
         plt.ylabel('Names',color="white")
         plt.title('Owed Distribution',color="white")
         plt.gca().tick_params(axis='x', colors='white')  
         plt.gca().tick_params(axis='y', colors='white')
         plt.tight_layout()
-
          
     return plt 
 
 def register_user(username,password):
     with get_database_connection() as connect:
         d=connect.cursor()
-        query = f'INSERT INTO users VALUES (?, ?)'
+        query = f'INSERT INTO users(username,password) VALUES (?, ?)'
         d.execute(query,(username,password) )
         connect.commit()
         
@@ -109,4 +114,12 @@ def check_password(username):
         d.execute(query,(str(username),) )
         x = d.fetchone()
         if x:
-            return x[0]     
+            return x[0]
+def get_id(username):
+    with get_database_connection() as connect:
+        d=connect.cursor()
+        query = f'SELECT id FROM users WHERE username == ?'
+        d.execute(query,(str(username),) )
+        x = d.fetchone()
+        if x:
+            return x[0]              
