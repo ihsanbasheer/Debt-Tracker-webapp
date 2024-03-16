@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}view debt{% endblock %}
+{% block content %}
+<style>
+    table, th, td {
+      background-color: azure ;
+      color : black;
+      font-style : bold ;
+      border:2.5px solid black;
+      text-align: center;
+    }
+</style>
+ 
+<h2 style="color: azure; text-align: center;">DEBT TABLE</h2>
+
+<table style=" color:white;margin: 0px auto; width:80%">
+  <tr>
+    <th>Person Name</th>
+    <th>Amount</th>
+  </tr>
+    {% for i in x %}
+        <tr>
+            <td>{{i[0]}}</td>
+            <td>{{i[1]}}</td>
+        </tr>
+    {% endfor %}
+</table>
+
+
+{% endblock %}
