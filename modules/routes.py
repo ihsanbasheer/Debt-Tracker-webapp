@@ -1,11 +1,10 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, session
-from modules import app
-from modules.database import checktable,get_plot,register_user,check_user_unique,check_password,get_id
-
+from modules import app ,bcrypt
+from modules.database import checktable,get_plot,register_user,check_user_unique,get_password,get_id
 import sqlite3
-
+from datetime import datetime
 checktable()
 
 load_dotenv()
@@ -24,8 +23,9 @@ def login():
     if request.method == "POST":
         loginuser = request.form["LOGINU"] 
         loginpass = request.form["LOGINP"]
-
-        if check_password(loginuser) == loginpass:
+        x= get_password(loginuser)
+        is_valid = bcrypt.check_password_hash (x, loginpass) 
+        if is_valid :
             session['username'] = loginuser
             session['user_id'] = get_id(loginuser)
             return redirect(url_for('welcome'))
@@ -109,13 +109,14 @@ def addperson():
     d=connect.cursor()
     if request.method == 'POST':
         table = session["table"]
-        user_id = session['user_id']    
+        user_id = session['user_id']
+        date = datetime.now()
+        inputdate = date.strftime("%d/%m/%y")    
         inputperson = request.form["personname"] 
         inputamount = request.form["amount"]
         debt_or_owed =  session["table"]
-        query = f'INSERT INTO debttable(person,amount,type,user_id) VALUES(?,?,?,?)'
-        print("Query:", inputperson, inputamount, debt_or_owed, user_id)  # Print the query string
-        d.execute(query, (inputperson, inputamount, debt_or_owed, user_id))
+        query = f'INSERT INTO debttable(person,amount,type,date,user_id) VALUES(?,?,?,?,?)'
+        d.execute(query, (inputperson, inputamount, debt_or_owed,inputdate,user_id))
         connect.commit()
 
         connect.close()

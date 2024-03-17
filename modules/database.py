@@ -1,6 +1,6 @@
 import sqlite3
 import numpy as np
-
+from modules import bcrypt
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS debttable (
     person TEXT,
     amount INTEGER,
     type TEXT NOT NULL,
+    date DATE NOT NULL,
     user_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id)
 )
@@ -87,10 +88,11 @@ def get_plot(i):
     return plt 
 
 def register_user(username,password):
+    hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     with get_database_connection() as connect:
         d=connect.cursor()
         query = f'INSERT INTO users(username,password) VALUES (?, ?)'
-        d.execute(query,(username,password) )
+        d.execute(query,(username,hashed_password) )
         connect.commit()
         
 
@@ -107,7 +109,7 @@ def check_user_unique(username):
             # print("user exists")
             return False
         
-def check_password(username):
+def get_password(username):
     with get_database_connection() as connect:
         d=connect.cursor()
         query = f'SELECT password FROM users WHERE username == ?'
